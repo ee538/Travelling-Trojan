@@ -129,8 +129,8 @@ void TrojanMap::PrintMenu() {
     std::string input2;
     getline(std::cin, input2);
     auto start = std::chrono::high_resolution_clock::now();
-    auto results = CalculateShortestPath_Dijkstra(input1, input2);
-    //auto results = CalculateShortestPath_Bellman_Ford(input1, input2);
+    //auto results = CalculateShortestPath_Dijkstra(input1, input2);
+    auto results = CalculateShortestPath_Bellman_Ford(input1, input2);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     menu = "*************************Results******************************\n";
@@ -753,14 +753,15 @@ std::string TrojanMap::GetID(std::string name) {
  */
 std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
     std::string location1_name, std::string location2_name) {
-  // refer to "cpp tour - distance_matrix.cc" 
+  // refer to "cpp tour - distance_matrix.cc"
+  // O((m+n)logn). n-size of data, m-edges in the graph
   std::vector<std::string> path;
   std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>,
                       std::greater<std::pair<double, std::string>>> q; //use the priority queue
   //initialize the distance vector(distance from location1 to others)
   std::string start, end; // the id of location1 and location2
   std::unordered_map<std::string, double> dist; //distance map of the nodes
-  std::unordered_map<std::string, std::vector<std::string>> all_path; //record the shortest path of each node
+  std::unordered_map<std::string, std::string> pre; //record the node and its predecessor
 
   //initialize the distance map. o(n), n-length of data
   for (auto &i:data){
@@ -775,25 +776,33 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
   while (!q.empty()){ //n times
     std::string min_node = q.top().second;
     q.pop(); //delete the smallest node o(logn)
-    all_path[min_node].push_back(min_node);
 
     if (min_node == end) {break;}
 
     //Relax distances 松弛算法
     std::vector<std::string> neigh = data[min_node].neighbors;
-    for (auto &i:neigh){ //total (while & for) of o(2m)=o(m) m-edges in the graph
+    for (auto &i:neigh){ //total (while & for) of o(2m)=o(m).
       double d = sqrt(pow(data[i].lat-data[min_node].lat,2)+pow(data[i].lon-data[min_node].lon,2));
       double new_dist = dist[min_node] + d;
       if (dist[i] > new_dist){
         dist[i] = new_dist;
         q.push(std::make_pair(dist[i], i)); //o(logn)
         //if the current min node can update node i's path, 
-        //implying that current node's shortest path is a part of the shortes path of node i
-        all_path[i] = all_path[min_node];//o(n)
+        //implying that current node is the predecessor of node i
+        pre[i] = min_node; //update the predecessor of the node
       }
     }
   }
-  return path = all_path[end];
+
+  std::string temp = end;
+  while (temp != start){ //o(n)
+    path.push_back(temp);
+    temp = pre[temp];
+  }
+  path.push_back(start);
+  std::reverse(path.begin(), path.end()); //o(n)
+
+  return path;
 }
 
 /**
@@ -806,7 +815,48 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
  */
 std::vector<std::string> TrojanMap::CalculateShortestPath_Bellman_Ford(
     std::string location1_name, std::string location2_name){
+  /*reference:"cpp tour - distance_matrix.cc" 
+  * https://www.cnblogs.com/xzxl/p/7232929.html
+  */
+  // O(mn). n-length of data, m-edges in the graph
   std::vector<std::string> path;
+  std::unordered_map<std::string, double> dist; //distance map of the nodes
+  std::string start, end; // the id of location1 and location2
+  std::unordered_map<std::string, std::string> pre; //record the node and its predecessor
+  int len = data.size();
+
+  //initialize the distance map. o(n)
+  for (auto &i:data){
+    dist[i.first] = INT_MAX;
+    if (i.second.name == location1_name) {start = i.first;}
+    if (i.second.name == location2_name) {end = i.first;}
+  }
+  dist[start] = 0; //the distance between start and start is 0
+
+  for (int i=0; i<len-1; i++){ //maximum len-1 edges. i: the edges between start and end. O(n)
+    int flag = 0;
+    for (auto &v:data){
+      std::string node = v.first;
+      for (auto &neigh:v.second.neighbors){ //two for loop: O(m)
+        double d = sqrt(pow(v.second.lat-data[neigh].lat,2)+pow(v.second.lon-data[neigh].lon,2));
+        if (dist[node] > dist[neigh] + d){
+          dist[node] = dist[neigh] + d;
+          pre[node] = neigh; //update the predecessor of the node
+          flag = 1;
+        }
+      }
+    }
+    if (flag == 0){break;} //if there is no change, achieve balance. break
+  }
+
+  std::string temp = end;
+  while (temp != start){
+    path.push_back(temp);
+    temp = pre[temp];
+  }
+  path.push_back(start);
+  std::reverse(path.begin(), path.end());
+
   return path;
 }
 
