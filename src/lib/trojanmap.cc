@@ -130,6 +130,7 @@ void TrojanMap::PrintMenu() {
     getline(std::cin, input2);
     auto start = std::chrono::high_resolution_clock::now();
     auto results = CalculateShortestPath_Dijkstra(input1, input2);
+    //auto results = CalculateShortestPath_Bellman_Ford(input1, input2);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     menu = "*************************Results******************************\n";
@@ -672,6 +673,43 @@ double TrojanMap::CalculatePathLength(const std::vector<std::string> &path) {
  */
 std::vector<std::string> TrojanMap::Autocomplete(std::string name){
   std::vector<std::string> results;
+  int inputsize = name.size();
+  std::string iname = name; // input name
+  std::transform(iname.begin(), iname.end(), iname.begin(),[](unsigned char c){ return std::tolower(c); });
+  
+  for (auto i :data){
+    Node n = i.second; // unordered_map<string, Node> data
+    std::string nname = n.name; // name of the location(node)
+    std::transform(nname.begin(), nname.end(), nname.begin(),[](unsigned char c){ return std::tolower(c); });
+    
+    //ta:7271 ch:6407
+    int flag = 1;
+    if (nname < iname) {flag = 0;}
+    else{
+      for (int i = 0;i<inputsize;i++){
+        if (nname[i] == iname[i]) {continue;} 
+        else{
+          flag = 0;
+          break;
+        }
+      }
+    }
+    if (flag == 1) {results.push_back(n.name);}
+    
+    /*
+    //ta:6047 ch:6585
+    if (nname.find(iname) == 0){
+      results.push_back(n.name);
+    }
+    */
+    
+    /*
+    //ta:6674 ch:7047
+    if (nname.compare(0,inputsize,iname) ==0){
+      results.push_back(n.name);
+    }
+    */
+  }
   return results;
 }
 
@@ -682,6 +720,13 @@ std::vector<std::string> TrojanMap::Autocomplete(std::string name){
  * @return {std::pair<double,double>}  : (lat, lon)
  */
 std::pair<double, double> TrojanMap::GetPosition(std::string name) {
+  for (auto &i:data){
+    Node n = i.second;
+    if (n.name == name){
+      std::pair<double, double> results(n.lat, n.lon);
+      return results;
+    }
+  }
   std::pair<double, double> results(-1, -1);
   return results;
 }
@@ -708,8 +753,47 @@ std::string TrojanMap::GetID(std::string name) {
  */
 std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
     std::string location1_name, std::string location2_name) {
+  // refer to "cpp tour - distance_matrix.cc" 
   std::vector<std::string> path;
-  return path;
+  std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>,
+                      std::greater<std::pair<double, std::string>>> q; //use the priority queue
+  //initialize the distance vector(distance from location1 to others)
+  std::string start, end; // the id of location1 and location2
+  std::unordered_map<std::string, double> dist; //distance map of the nodes
+  std::unordered_map<std::string, std::vector<std::string>> all_path; //record the shortest path of each node
+
+  //initialize the distance map. o(n), n-length of data
+  for (auto &i:data){
+    dist[i.first] = INT_MAX;
+    if (i.second.name == location1_name) {start = i.first;}
+    if (i.second.name == location2_name) {end = i.first;}
+  }
+
+  dist[start] = 0; //the distance between start and start is 0
+  q.push(std::make_pair(0, start)); //initialize the queue
+
+  while (!q.empty()){ //n times
+    std::string min_node = q.top().second;
+    q.pop(); //delete the smallest node o(logn)
+    all_path[min_node].push_back(min_node);
+
+    if (min_node == end) {break;}
+
+    //Relax distances 松弛算法
+    std::vector<std::string> neigh = data[min_node].neighbors;
+    for (auto &i:neigh){ //total (while & for) of o(2m)=o(m) m-edges in the graph
+      double d = sqrt(pow(data[i].lat-data[min_node].lat,2)+pow(data[i].lon-data[min_node].lon,2));
+      double new_dist = dist[min_node] + d;
+      if (dist[i] > new_dist){
+        dist[i] = new_dist;
+        q.push(std::make_pair(dist[i], i)); //o(logn)
+        //if the current min node can update node i's path, 
+        //implying that current node's shortest path is a part of the shortes path of node i
+        all_path[i] = all_path[min_node];//o(n)
+      }
+    }
+  }
+  return path = all_path[end];
 }
 
 /**
