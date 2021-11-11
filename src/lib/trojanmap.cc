@@ -758,7 +758,6 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
   std::vector<std::string> path;
   std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>,
                       std::greater<std::pair<double, std::string>>> q; //use the priority queue
-  //initialize the distance vector(distance from location1 to others)
   std::string start, end; // the id of location1 and location2
   std::unordered_map<std::string, double> dist; //distance map of the nodes
   std::unordered_map<std::string, std::string> pre; //record the node and its predecessor
@@ -870,8 +869,38 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Bellman_Ford(
 std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTrojan(
                                     std::vector<std::string> &location_ids) {
   std::pair<double, std::vector<std::vector<std::string>>> results;
+  std::vector<std::vector<std::string>> res_vec;
+  std::vector<std::string> optimal_path;
+  int len=location_ids.size()+1;
+  double pathlen = INT_MAX;
+  location_ids.push_back(location_ids[0]); //route needs to go back to the starting point
+  backtrack(location_ids, res_vec, 1, len, pathlen, optimal_path);
+  res_vec.push_back(optimal_path);
+  results = std::make_pair(pathlen, res_vec);
   return results;
 }
+
+void TrojanMap::backtrack(std::vector<std::string> &points, std::vector<std::vector<std::string>> &res, 
+                          int current, int len, double &pathlen, std::vector<std::string> &optimal_path){
+  //reference - lc46
+  //stable state
+  if (current == len-1){
+    res.push_back(points); //records
+    double templen = CalculatePathLength(points);
+    if (templen < pathlen){
+      pathlen = templen;
+      optimal_path = points;
+    }
+    return;
+  }
+
+  for (int i=current; i<len-1; i++){
+    std::swap(points[current], points[i]); //O(1), swap two elements
+    backtrack(points, res, current+1, len, pathlen, optimal_path);
+    std::swap(points[current], points[i]); //revoke swap
+  }
+}
+
 
 std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan_2opt(
       std::vector<std::string> &location_ids){
