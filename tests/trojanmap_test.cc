@@ -143,8 +143,8 @@ TEST(TrojanMapTest, TSP) {
   TrojanMap m;
   m.CreateGraphFromCSVFile();
   std::vector<std::string> input{"1873056015", "6905329551", "213332060", "1931345270"}; // Input location ids 
-  auto result = m.TravellingTrojan(input);
-  //auto result = m.TravellingTrojan_2opt(input);
+  //auto result = m.TravellingTrojan(input);
+  auto result = m.TravellingTrojan_2opt(input);
   std::cout << "My path length: "  << result.first << "miles" << std::endl; // Print the result path lengths
   std::vector<std::string> gt{"1873056015", "213332060", "1931345270", "6905329551", "1873056015"}; // Expected order
   std::cout << "GT path length: "  << m.CalculatePathLength(gt) << "miles" << std::endl; // Print the gt path lengths
@@ -163,8 +163,8 @@ TEST(TrojanMapTest, TSP2) {
   TrojanMap m;
   m.CreateGraphFromCSVFile();
   std::vector<std::string> input{"1862312636", "7424270441", "67666219", "4015405548", "4015203110", "6807439002"}; // Input location ids 
-  auto result = m.TravellingTrojan(input);
-  //auto result = m.TravellingTrojan_2opt(input);
+  //auto result = m.TravellingTrojan(input);
+  auto result = m.TravellingTrojan_2opt(input);
   std::cout << "My path length: " << result.first << "miles" << std::endl; // Print the result path lengths
   std::vector<std::string> gt{"1862312636", "4015405548", "4015203110", "6807439002", "7424270441", "67666219", "1862312636"}; // Expected order
   std::cout << "GT path length: " << m.CalculatePathLength(gt) << "miles" << std::endl; // Print the groundtruth path lengths

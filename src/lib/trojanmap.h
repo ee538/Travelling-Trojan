@@ -127,11 +127,14 @@ class TrojanMap {
   
   std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan_2opt(
       std::vector<std::string> &location_ids);
+  void DFS_TS(std::vector<std::string> &result, std::unordered_map<std::string, int> &mark,
+        std::string root, std::unordered_map<std::string, std::vector<std::string>> &edge_map);
 
   // Given a subgraph specified by a square-shape area, determine whether there is a
   // cycle or not in this subgraph.
   // vector square has 4 elements: left/right/top/bottom bound in order.
   bool CycleDetection(std::vector<double> &square);
+  bool DFS(std::string id,std::map<std::string,bool> &visited,std::string parent,std::vector<std::string> &path);
 
   // Given a location id and k, find the k closest points on the map
   std::vector<std::string> FindKClosestPoints(std::string name, int k);

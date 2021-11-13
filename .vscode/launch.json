@@ -50,7 +50,6 @@
       "request": "launch",
       "program": "${workspaceFolder}/bazel-bin/src/main/${fileBasenameNoExtension}",
       "args": [],
-      
       "sourceMap": {
         ".": "${workspaceFolder}/"
       },
