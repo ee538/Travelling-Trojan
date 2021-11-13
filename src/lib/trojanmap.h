@@ -122,7 +122,7 @@ class TrojanMap {
   std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan(
       std::vector<std::string> &location_ids);
   void backtrack(std::vector<std::string> &points, std::vector<std::vector<std::string>> &res, 
-        int current, int len, double &pathlen, std::vector<std::string> &optimal_path);
+        int current, double &pathlen, std::vector<std::string> &optimal_path);
 
   
   std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan_2opt(

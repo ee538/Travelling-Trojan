@@ -144,6 +144,7 @@ TEST(TrojanMapTest, TSP) {
   m.CreateGraphFromCSVFile();
   std::vector<std::string> input{"1873056015", "6905329551", "213332060", "1931345270"}; // Input location ids 
   auto result = m.TravellingTrojan(input);
+  //auto result = m.TravellingTrojan_2opt(input);
   std::cout << "My path length: "  << result.first << "miles" << std::endl; // Print the result path lengths
   std::vector<std::string> gt{"1873056015", "213332060", "1931345270", "6905329551", "1873056015"}; // Expected order
   std::cout << "GT path length: "  << m.CalculatePathLength(gt) << "miles" << std::endl; // Print the gt path lengths
@@ -163,6 +164,7 @@ TEST(TrojanMapTest, TSP2) {
   m.CreateGraphFromCSVFile();
   std::vector<std::string> input{"1862312636", "7424270441", "67666219", "4015405548", "4015203110", "6807439002"}; // Input location ids 
   auto result = m.TravellingTrojan(input);
+  //auto result = m.TravellingTrojan_2opt(input);
   std::cout << "My path length: " << result.first << "miles" << std::endl; // Print the result path lengths
   std::vector<std::string> gt{"1862312636", "4015405548", "4015203110", "6807439002", "7424270441", "67666219", "1862312636"}; // Expected order
   std::cout << "GT path length: " << m.CalculatePathLength(gt) << "miles" << std::endl; // Print the groundtruth path lengths
@@ -181,6 +183,7 @@ TEST(TrojanMapTest, TSP3) {
   m.CreateGraphFromCSVFile();
   std::vector<std::string> input{"123120189", "4011837229", "4011837224", "2514542032", "2514541020", "1931345270", "4015477529", "214470792", "63068532", "6807909279"}; // Input location ids 
   auto result = m.TravellingTrojan(input);
+  //auto result = m.TravellingTrojan_2opt(input);
   std::cout << "My path length: " <<result.first << "miles" << std::endl; // Print the result path lengths
   std::vector<std::string> gt{"123120189", "1931345270", "4011837224", "4011837229", "2514542032", "2514541020", "6807909279", "63068532", "214470792", "4015477529", "123120189"}; // Expected order
   std::cout << "GT path length: " << m.CalculatePathLength(gt) << "miles" << std::endl; // Print the groundtruth path lengths

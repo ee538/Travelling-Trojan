@@ -4,7 +4,7 @@
 using namespace std;
 
 int main() {
-  
+
   TrojanMap x;
   x.CreateGraphFromCSVFile();
   x.PrintMenu();

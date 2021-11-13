@@ -173,7 +173,8 @@ void TrojanMap::PrintMenu() {
     PlotPoints(locations);
     std::cout << "Calculating ..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    auto results = TravellingTrojan(locations);
+    //auto results = TravellingTrojan(locations);
+    auto results = TravellingTrojan_2opt(locations);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     CreateAnimation(results.second);
@@ -871,21 +872,21 @@ std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTr
   std::pair<double, std::vector<std::vector<std::string>>> results;
   std::vector<std::vector<std::string>> res_vec;
   std::vector<std::string> optimal_path;
-  int len=location_ids.size()+1;
   double pathlen = INT_MAX;
   location_ids.push_back(location_ids[0]); //route needs to go back to the starting point
-  backtrack(location_ids, res_vec, 1, len, pathlen, optimal_path);
+  //backtrack will totally be invoked O(n!), push_back O(n). tatal:O(n*n!)
+  backtrack(location_ids, res_vec, 1, pathlen, optimal_path);
   res_vec.push_back(optimal_path);
   results = std::make_pair(pathlen, res_vec);
   return results;
 }
 
 void TrojanMap::backtrack(std::vector<std::string> &points, std::vector<std::vector<std::string>> &res, 
-                          int current, int len, double &pathlen, std::vector<std::string> &optimal_path){
+                          int current, double &pathlen, std::vector<std::string> &optimal_path){
   //reference - lc46
   //stable state
-  if (current == len-1){
-    res.push_back(points); //records
+  if (current == points.size()-1){
+    res.push_back(points); //records O(n)
     double templen = CalculatePathLength(points);
     if (templen < pathlen){
       pathlen = templen;
@@ -894,18 +895,72 @@ void TrojanMap::backtrack(std::vector<std::string> &points, std::vector<std::vec
     return;
   }
 
-  for (int i=current; i<len-1; i++){
+  for (int i=current; i<points.size()-1; i++){
     std::swap(points[current], points[i]); //O(1), swap two elements
-    backtrack(points, res, current+1, len, pathlen, optimal_path);
+    backtrack(points, res, current+1, pathlen, optimal_path);
     std::swap(points[current], points[i]); //revoke swap
   }
 }
 
 
-std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan_2opt(
+std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTrojan_2opt(
       std::vector<std::string> &location_ids){
+  
+  // reference: https://en.wikipedia.org/wiki/2-opt 
+  // two for-loops to get (i,k), 2-opt swap(may not get the optimal answer!)
+  // much faster!
   std::pair<double, std::vector<std::vector<std::string>>> results;
+  location_ids.push_back(location_ids[0]);
+  std::vector<std::vector<std::string>> res_vec; //all the path
+  std::vector<std::string> optimal_path = location_ids;
+  int len=location_ids.size();
+  double current_dist = CalculatePathLength(location_ids);
+  double pathlen = current_dist;
+  
+  while (true){
+    int flag = 0;
+    for (int i=1; i<len-2; i++){
+      for (int k=i+1; k<len-1; k++){
+        std::reverse(location_ids.begin()+i, location_ids.begin()+k+1);
+        current_dist = CalculatePathLength(location_ids);
+        res_vec.push_back(location_ids);
+        if (current_dist < pathlen){
+          pathlen = current_dist;
+          optimal_path = location_ids;
+          flag = 1;
+        }
+        else{std::reverse(location_ids.begin()+i, location_ids.begin()+k+1);}
+      }
+    }
+    if (flag == 0){break;}
+  }
+
+  res_vec.push_back(optimal_path);
+  results = std::make_pair(pathlen, res_vec);
   return results;
+  
+  /*
+  // reference: https://www.jianshu.com/p/656a8d98d189
+  // also can randomly choose (i,k) 2-opt swap(may not get the optimal answer!)  
+  while (count < 200){
+    int i = (rand()%(len-2))+1;
+    while (true){
+      int k = (rand()%(len-2))+1;
+      if (i!=k){break;}
+    }
+    if (i<k) {std::reverse(location_ids.begin()+i, location_ids.begin()+k+1);}
+    else {std::reverse(location_ids.begin()+k, location_ids.begin()+i+1);}
+
+    current_dist = CalculatePathLength(location_ids);
+    res_vec.push_back(location_ids);
+    if (pathlen > current_dist){
+      pathlen = current_dist;
+      optimal_path = location_ids;
+      count = 0;
+    }
+    else{count += 1;}
+  }
+  */
 }
 
 /**
