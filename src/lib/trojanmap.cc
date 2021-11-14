@@ -22,6 +22,8 @@
 #include <unordered_set>
 #include <stack>
 #include <chrono>
+#include <random>       // std::default_random_engine
+#include <chrono>       // std::chrono::system_clock
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -174,7 +176,8 @@ void TrojanMap::PrintMenu() {
     std::cout << "Calculating ..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
     //auto results = TravellingTrojan(locations);
-    auto results = TravellingTrojan_2opt(locations);
+    //auto results = TravellingTrojan_2opt(locations);
+    auto results = TravellingTrojan_Genetic(locations);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     CreateAnimation(results.second);
@@ -788,7 +791,7 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
 
     //Relax distances 松弛算法
     std::vector<std::string> neigh = data[min_node].neighbors;
-    for (auto &i:neigh){ //total (while & for) of o(2m)=o(m).
+    for (auto i:neigh){ //total (while & for) of o(2m)=o(m).
       //double d = sqrt(pow(data[i].lat-data[min_node].lat,2)+pow(data[i].lon-data[min_node].lon,2));
       double d = CalculateDistance(i, min_node);
       double new_dist = dist[min_node] + d;
@@ -802,14 +805,15 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
     }
   }
 
-  std::string temp = end;
-  while (temp != start){ //o(n)
-    path.push_back(temp);
-    temp = pre[temp];
+  if (pre.find(end) != pre.end()){
+    std::string temp = end;
+    while (temp != start){ //o(n)
+      path.push_back(temp);
+      temp = pre[temp];
+    }
+    path.push_back(start);
+    std::reverse(path.begin(), path.end()); //o(n)
   }
-  path.push_back(start);
-  std::reverse(path.begin(), path.end()); //o(n)
-
   return path;
 }
 
@@ -858,13 +862,15 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Bellman_Ford(
     if (flag == 0){break;} //if there is no change, achieve balance. break
   }
 
-  std::string temp = end;
-  while (temp != start){
-    path.push_back(temp);
-    temp = pre[temp];
+  if (pre.find(end) != pre.end()){
+    std::string temp = end;
+    while (temp != start){
+      path.push_back(temp);
+      temp = pre[temp];
+    }
+    path.push_back(start);
+    std::reverse(path.begin(), path.end());
   }
-  path.push_back(start);
-  std::reverse(path.begin(), path.end());
 
   return path;
 }
@@ -971,6 +977,85 @@ std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTr
   }
   */
 }
+
+
+std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTrojan_Genetic(
+      std::vector<std::string> &location_ids){
+  //reference - https://www.geeksforgeeks.org/traveling-salesman-problem-using-genetic-algorithm/
+  //location_ids: gene. results: chromosome/population
+  std::pair<double, std::vector<std::vector<std::string>>> results;
+  int population_size = 5, len = location_ids.size()+1; //initialize 10 permutations of cities
+  std::vector<std::vector<std::string>> population; //record permutations
+  std::vector<std::string> optimal_path;
+  double min_path_len = INT_MAX;
+  std::vector<std::vector<std::string>> res_vec;
+  location_ids.push_back(location_ids[0]);
+
+  for (int i=0; i<population_size; i++){
+    //shuffle the nodes except the start and end. every shuffle means a population
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    shuffle (location_ids.begin()+1, location_ids.end()-1, std::default_random_engine(seed));
+    population.push_back(location_ids);
+    res_vec.push_back(location_ids);
+    double d = CalculatePathLength(location_ids);
+    // initialize the optimal path and its length
+    if (d< min_path_len){
+      optimal_path = location_ids;
+      min_path_len = d;
+    }
+  }
+
+  int temperature = 10000, gen=0; //genernations
+
+  while (temperature > 1000 && gen<5){
+    std::vector<std::string> temp_len;
+
+    // all populations need to be updated
+    for (int i=0; i<population_size; i++){
+      temp_len = population[i];
+      while (true){
+
+        //mutation(swap the elements)
+        int j = (rand()%(len-2))+1, k=1; //[1,population_size-2]
+        while (true){
+          k = (rand()%(len-2))+1;
+          if (j!=k){break;}
+        }
+        std::swap(temp_len[j], temp_len[k]);
+
+        //update
+        double dis_origin = CalculatePathLength(population[i]);
+        double dis_new = CalculatePathLength(temp_len);
+        if (dis_origin > dis_new){
+          population[i] = temp_len;
+          res_vec.push_back(temp_len);
+          if (dis_new < min_path_len) {
+            min_path_len = dis_new;
+            optimal_path = temp_len;
+          }
+          break;
+        }
+
+        // Accepting the rejected population at a possible probability above threshold.
+        else{
+          float prob = pow(2.7,-1 * ((float)(dis_new- dis_origin)/ temperature));
+          if (prob > 0.5){
+            population[i] = temp_len;
+            res_vec.push_back(temp_len);
+            break;
+          }
+        }
+      }
+    }
+    temperature = (90*temperature)/100;
+    gen++;
+  }
+
+  res_vec.push_back(optimal_path);
+  results = std::make_pair(min_path_len, res_vec);
+  return results;
+}
+
 
 /**
  * Given CSV filename, it read and parse locations data from CSV file,
@@ -1141,28 +1226,28 @@ bool TrojanMap::CycleDetection(std::vector<double> &square) {
  * @return {std::vector<std::string>}: k closest points
  */
 std::vector<std::string> TrojanMap::FindKClosestPoints(std::string name, int k) {
-  //using heap!
+  //using heap! O(nlogk)
   std::vector<std::string> res;
   std::priority_queue<std::pair<double, std::string>> q; // first element is maximum 
   std::string start_id = GetID(name);
-  double start_lat = data[start_id].lat;
-  double start_lon = data[start_id].lon;
+  //double start_lat = data[start_id].lat;
+  //double start_lon = data[start_id].lon;
   int count =0;
 
   // limit the size of priority_queue to k
-  for (auto &v:data){
+  for (auto &v:data){ //O(n)
     Node n = v.second;
     if (v.first != start_id && n.name.size()!=0){
       //double d = sqrt(pow(n.lat-start_lat,2)+pow(n.lon-start_lon,2));
       double d = CalculateDistance(v.first, start_id);
       if (count < k){
-        q.push(std::make_pair(d, v.first));
+        q.push(std::make_pair(d, v.first)); //O(logk)
         count ++;
       }
       else{
         if (d < q.top().first){
           q.pop();
-          q.push(std::make_pair(d, v.first));
+          q.push(std::make_pair(d, v.first)); //O(logk)
         }
       }
     }
@@ -1170,7 +1255,6 @@ std::vector<std::string> TrojanMap::FindKClosestPoints(std::string name, int k) 
 
   while (!q.empty()){
     res.push_back(q.top().second);
-    std::cout << q.top().second<<": "<<q.top().first<<std::endl;
     q.pop();
   }
   std::reverse(res.begin(), res.end());

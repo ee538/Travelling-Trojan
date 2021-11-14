@@ -112,6 +112,8 @@ class TrojanMap {
   // that satisfies the given dependencies.
   std::vector<std::string> DeliveringTrojan(std::vector<std::string> &location_names,
                                             std::vector<std::vector<std::string>> &dependencies);
+  void DFS_TS(std::vector<std::string> &result, std::unordered_map<std::string, int> &mark,
+        std::string root, std::unordered_map<std::string, std::vector<std::string>> &edge_map);
 
   // Given a vector of location ids, it should reorder them such that the path
   // that covers all these points has the minimum length.
@@ -123,12 +125,12 @@ class TrojanMap {
       std::vector<std::string> &location_ids);
   void backtrack(std::vector<std::string> &points, std::vector<std::vector<std::string>> &res, 
         int current, double &pathlen, std::vector<std::string> &optimal_path);
-
   
   std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan_2opt(
       std::vector<std::string> &location_ids);
-  void DFS_TS(std::vector<std::string> &result, std::unordered_map<std::string, int> &mark,
-        std::string root, std::unordered_map<std::string, std::vector<std::string>> &edge_map);
+  
+  std::pair<double, std::vector<std::vector<std::string>>> TravellingTrojan_Genetic(
+      std::vector<std::string> &location_ids);
 
   // Given a subgraph specified by a square-shape area, determine whether there is a
   // cycle or not in this subgraph.
