@@ -1,5 +1,7 @@
 # EE538 Final Project Report - Fall 2021 - TrojanMap
 
+**Hello there, please grade Zijian Ye's github https://github.com/ee538/final-project-ZijianYe  Thank you!**
+
 ## Group members: Zixin Zhang, Zijian Ye
 
 ## Presentation video link: https://youtu.be/JyVr2JuwS1s
